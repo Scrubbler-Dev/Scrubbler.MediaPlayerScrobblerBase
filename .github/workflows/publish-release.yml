@@ -1,0 +1,92 @@
+name: Publish NuGet (release)
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Derive version from tag
+        shell: bash
+        run: |
+          set -e
+
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+
+          if [[ "$version" == "$tag" ]]; then
+            echo "Tag must start with 'v' (e.g. v0.1.0-alpha.1). Got: $tag"
+            exit 1
+          fi
+
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "Using VERSION=$version"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      - name: Test
+        run: dotnet test -c Release --no-build --verbosity normal
+
+      - name: Pack
+        shell: bash
+        run: |
+          set -euxo pipefail
+
+          mkdir -p artifacts
+
+          dotnet pack Scrubbler.MediaPlayerScrobblerBase/Scrubbler.MediaPlayerScrobblerBase.csproj \
+            -c Release \
+            /p:IsPackable=true \
+            /p:PackageVersion="${{ env.VERSION }}" \
+            /p:ContinuousIntegrationBuild=true \
+            -o artifacts \
+            --verbosity normal
+
+          echo "Contents of artifacts/:"
+          ls -la artifacts
+
+          echo "Searching for packages in workspace:"
+          find . -maxdepth 6 -type f \( -name "*.nupkg" -o -name "*.snupkg" \) -print
+
+      - name: Publish to NuGet.org
+        shell: bash
+        run: |
+          set -e
+          shopt -s nullglob
+
+          packages=(artifacts/*.nupkg)
+
+          if (( ${#packages[@]} == 0 )); then
+            echo "No .nupkg found in artifacts/. Aborting publish."
+            exit 1
+          fi
+
+          dotnet nuget push "${packages[@]}" \
+            --api-key "${{ secrets.NUGET_API_KEY }}" \
+            --source "https://api.nuget.org/v3/index.json" \
+            --skip-duplicate
+
+      - name: Upload packages to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg

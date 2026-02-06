@@ -1,0 +1,43 @@
+﻿<Project Sdk="Uno.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <UnoSingleProject>true</UnoSingleProject>
+    <OutputType>Library</OutputType>
+    <!-- Ensures the .xr.xml files are generated in a proper layout folder -->
+    <GenerateLibraryLayout>true</GenerateLibraryLayout>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+
+    <!-- Enables Uno XAML codegen and build logic -->
+    <UseUnoXaml>true</UseUnoXaml>
+    <EnableDefaultXamlItems>true</EnableDefaultXamlItems>
+
+    <!-- Nuget settings -->
+    <PackageId>Scrubbler.MediaPlayerScrobblerBase</PackageId>
+    <Authors>SHOEGAZEssb</Authors>
+    <Description>Base abstractions for Scrubbler media player plugins.</Description>
+    <RepositoryUrl>https://github.com/Scrubbler-Dev/Scrubbler.MediaPlayerScrobblerBase</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Scrubbler.PluginBase" />
+    <PackageReference Include="Shoegaze.LastFM" />
+    <PackageReference Include="Uno.Microsoft.Xaml.Behaviors.WinUI.Managed" />
+    <PackageReference Include="Uno.Microsoft.Xaml.Behaviors.Interactivity.WinUI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="MediaPlayerScrobblerControl.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="noartistimage.png" />
+  </ItemGroup>
+</Project>
