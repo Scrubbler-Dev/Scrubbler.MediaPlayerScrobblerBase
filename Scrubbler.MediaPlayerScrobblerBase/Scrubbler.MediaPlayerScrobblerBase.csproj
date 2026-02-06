@@ -12,6 +12,9 @@
     <UseUnoXaml>true</UseUnoXaml>
     <EnableDefaultXamlItems>true</EnableDefaultXamlItems>
 
+    <AssemblyVersion>0.1.0</AssemblyVersion>
+    <FileVersion>0.1.0</FileVersion>
+
     <!-- Nuget settings -->
     <PackageId>Scrubbler.MediaPlayerScrobblerBase</PackageId>
     <Authors>SHOEGAZEssb</Authors>
