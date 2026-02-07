@@ -29,6 +29,7 @@
 
   <ItemGroup>
     <PackageReference Include="Scrubbler.PluginBase" />
+    <PackageReference Include="Shoegaze.LastFM" />
     <PackageReference Include="Uno.Microsoft.Xaml.Behaviors.WinUI.Managed" />
     <PackageReference Include="Uno.Microsoft.Xaml.Behaviors.Interactivity.WinUI" />
   </ItemGroup>
