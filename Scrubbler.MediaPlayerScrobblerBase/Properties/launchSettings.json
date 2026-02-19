@@ -1,0 +1,17 @@
+{
+  "profiles": {
+    "Scrubbler.MediaPlayerScrobblerBase": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "SCRUBBLER_PLUGIN_MODE": "Debug"
+      }
+    },
+    "Scrubbler": {
+      "commandName": "Executable",
+      "executablePath": "E:\\Stuff\\Github\\Scrubbler-Dev\\Scrubbler-2\\Scrubbler\\Scrubbler.Host\\bin\\Debug\\net10.0-desktop\\Scrubbler.Host.exe",
+      "environmentVariables": {
+        "SCRUBBLER_PLUGIN_MODE": "Debug"
+      }
+    }
+  }
+}
