@@ -13,7 +13,7 @@
     <EnableDefaultXamlItems>true</EnableDefaultXamlItems>
 
     <AssemblyVersion>1.1.0</AssemblyVersion>
-    <FileVersion>1.1.0</FileVersion>
+    <FileVersion>1.1.1</FileVersion>
 
     <!-- Nuget settings -->
     <PackageId>Scrubbler.MediaPlayerScrobblerBase</PackageId>
@@ -42,5 +42,9 @@
 
   <ItemGroup>
     <Content Update="noartistimage.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Scrubbler.Test.MediaPlayerScrobblerBaseTest" />
   </ItemGroup>
 </Project>

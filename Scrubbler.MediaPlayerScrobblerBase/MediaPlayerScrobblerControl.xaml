@@ -59,11 +59,11 @@
             </Button>
 
             <!-- Auto-Connect -->
-            <CheckBox Content="Auto-Connect" IsChecked="{Binding AutoConnect}"
+            <CheckBox Content="Auto-Connect" IsChecked="{Binding AutoConnect, Mode=TwoWay}"
                   VerticalAlignment="Center"/>
 
             <!-- Rich Presence -->
-            <CheckBox Content="Discord Rich Presence" IsChecked="{Binding UseRichPresence}"
+            <CheckBox Content="Discord Rich Presence" IsChecked="{Binding EnableDiscordRichPresence, Mode=TwoWay}"
                   VerticalAlignment="Center"/>
         </StackPanel>
 

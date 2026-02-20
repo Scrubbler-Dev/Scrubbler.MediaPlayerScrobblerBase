@@ -6,4 +6,5 @@
     <File Path="global.json" />
   </Folder>
   <Project Path="Scrubbler.MediaPlayerScrobblerBase/Scrubbler.MediaPlayerScrobblerBase.csproj" />
+  <Project Path="Scrubbler.Test.MediaPlayerScrobblerBaseTest/Scrubbler.Test.MediaPlayerScrobblerBaseTest.csproj" Id="5859bacd-2866-4885-84c9-4d9cd9869fd6" />
 </Solution>
