@@ -344,12 +344,13 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
       {
         var p = new NowPlayingPresence($"Listening to '{CurrentTrackName}'")
         {
-          State = $"By '{CurrentArtistName}' on {(string.IsNullOrEmpty(CurrentAlbumName) ? "Unknown Album" : CurrentAlbumName)}",
+          State = $"By '{CurrentArtistName}' on {(string.IsNullOrEmpty(CurrentAlbumName) ? "'Unknown Album'" : $"'{CurrentAlbumName}'")}",
           LargeImageKey = _discordRichPresenceData.LargeImageKey,
           LargeImageText = _discordRichPresenceData.LargeImageText,
           SmallImageKey = _discordRichPresenceData.SmallImageKey,
           SmallImageText = _discordRichPresenceData.SmallImageText,
-          StartTimestamp = DateTime.UtcNow
+          StartTimestamp = DateTime.UtcNow,
+          EndTimestamp = DateTime.UtcNow.AddSeconds(CurrentTrackLength)
         };
 
         _discordRichPresence.Publish(p);
