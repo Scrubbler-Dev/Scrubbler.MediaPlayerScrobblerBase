@@ -3,11 +3,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MediaPlayerScrobblerBase;
 using Scrubbler.Abstractions;
-using Scrubbler.Abstractions.Plugin;
-using Scrubbler.Abstractions.Plugin.Account;
-using Scrubbler.Abstractions.Services;
 using Scrubbler.MediaPlayerScrobblerBase;
+using Scrubbler.PluginBase;
 using Scrubbler.PluginBase.Discord;
+using Scrubbler.PluginBase.Plugin;
+using Scrubbler.PluginBase.Plugin.Account;
+using Scrubbler.PluginBase.Services;
 using Shoegaze.LastFM;
 
 namespace Scrubbler.Plugins.Scrobblers.MediaPlayerScrobbleBase;
