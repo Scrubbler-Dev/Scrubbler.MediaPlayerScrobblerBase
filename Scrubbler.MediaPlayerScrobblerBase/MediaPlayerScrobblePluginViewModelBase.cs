@@ -45,8 +45,6 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
 
   public bool CanOpenLinks => FunctionContainer?.OpenLinksObject != null;
 
-  public ICanUpdateNowPlaying? UpdateNowPlayingObject { get; set; }
-
   protected readonly ILastfmClient _lastfmClient = lastfmClient;
 
   protected readonly IDiscordRichPresence _discordRichPresence = discordRichPresence;
@@ -195,14 +193,15 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
 
   protected async Task UpdateNowPlaying()
   {
-    if (UpdateNowPlayingObject == null || string.IsNullOrEmpty(CurrentTrackName) || string.IsNullOrEmpty(CurrentArtistName))
+    var nowPlaying = FunctionContainer?.UpdateNowPlayingObject;
+    if (nowPlaying == null || string.IsNullOrEmpty(CurrentTrackName) || string.IsNullOrEmpty(CurrentArtistName))
       return;
 
     try
     {
       _logger.Debug("Updating Now Playing...");
       var albumName = string.IsNullOrWhiteSpace(CurrentAlbumName) ? null : CurrentAlbumName;
-      var errorMessage = await UpdateNowPlayingObject.UpdateNowPlaying(CurrentArtistName, CurrentTrackName, albumName);
+      var errorMessage = await nowPlaying.UpdateNowPlaying(CurrentArtistName, CurrentTrackName, albumName);
       if (!string.IsNullOrEmpty(errorMessage))
       {
         _logger.Error($"Error updating Now Playing: {errorMessage}");

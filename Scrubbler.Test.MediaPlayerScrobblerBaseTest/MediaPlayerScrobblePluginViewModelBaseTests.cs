@@ -176,7 +176,8 @@ public partial class MediaPlayerScrobblePluginViewModelBaseTests
     var lastfmMock = new Mock<ILastfmClient>();
     var discordRpMock = new Mock<IDiscordRichPresence>();
     var loggerMock = new Mock<ILogService>();
-    var updateNowPlayingMock = new Mock<ICanUpdateNowPlaying>();
+    var accountMock = new Mock<IAccountPlugin>();
+    var updateNowPlayingMock = accountMock.As<ICanUpdateNowPlaying>();
     updateNowPlayingMock
       .Setup(u => u.UpdateNowPlaying("Artist", "Track", null))
       .ReturnsAsync((string?)null);
@@ -190,12 +191,26 @@ public partial class MediaPlayerScrobblePluginViewModelBaseTests
       ArtistName = "Artist",
       TrackName = "Track",
       AlbumName = string.Empty,
-      UpdateNowPlayingObject = updateNowPlayingMock.Object
+      FunctionContainer = new AccountFunctionContainer(accountMock.Object)
     };
 
     await vm.InvokeUpdateNowPlaying();
 
     updateNowPlayingMock.Verify(u => u.UpdateNowPlaying("Artist", "Track", null), Times.Once);
+
+    // Removing or switching the container must not keep the old account alive.
+    vm.FunctionContainer = null;
+    await vm.InvokeUpdateNowPlaying();
+    vm.FunctionContainer = new AccountFunctionContainer(null);
+    await vm.InvokeUpdateNowPlaying();
+    var replacementAccount = new Mock<IAccountPlugin>();
+    var replacementNowPlaying = replacementAccount.As<ICanUpdateNowPlaying>();
+    replacementNowPlaying.Setup(u => u.UpdateNowPlaying("Artist", "Track", null)).ReturnsAsync((string?)null);
+    vm.FunctionContainer = new AccountFunctionContainer(replacementAccount.Object);
+    await vm.InvokeUpdateNowPlaying();
+
+    updateNowPlayingMock.Verify(u => u.UpdateNowPlaying("Artist", "Track", null), Times.Once);
+    replacementNowPlaying.Verify(u => u.UpdateNowPlaying("Artist", "Track", null), Times.Once);
   }
 
   [Test]
