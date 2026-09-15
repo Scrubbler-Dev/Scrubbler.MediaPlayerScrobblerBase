@@ -55,6 +55,39 @@ public partial class MediaPlayerScrobblePluginViewModelBaseTests
     Assert.That(notifications, Does.Contain(nameof(vm.ScrobbleProgressSeconds)));
   }
 
+  [Test]
+  public void AccountChange_RefreshesMetadataAndPreservesPlaybackProgress()
+  {
+    var first = new Mock<IAccountPlugin>();
+    first.As<ICanFetchPlayCounts>().Setup(p => p.GetArtistPlayCount("Artist")).ReturnsAsync((null, 1));
+    first.As<ICanFetchPlayCounts>().Setup(p => p.GetTrackPlayCount("Artist", "Track")).ReturnsAsync((null, 2));
+    first.As<ICanFetchTags>().Setup(p => p.GetTrackTags("Artist", "Track")).ReturnsAsync((null, new[] { "old" }));
+    first.As<ICanLoveTracks>().Setup(p => p.GetLoveState("Artist", "Track", null)).ReturnsAsync((null, true));
+    var second = new Mock<IAccountPlugin>();
+    second.As<ICanFetchPlayCounts>().Setup(p => p.GetArtistPlayCount("Artist")).ReturnsAsync((null, 10));
+    second.As<ICanFetchPlayCounts>().Setup(p => p.GetTrackPlayCount("Artist", "Track")).ReturnsAsync((null, 20));
+    second.As<ICanFetchTags>().Setup(p => p.GetTrackTags("Artist", "Track")).ReturnsAsync((null, new[] { "new" }));
+    second.As<ICanLoveTracks>().Setup(p => p.GetLoveState("Artist", "Track", null)).ReturnsAsync((null, false));
+    var vm = CreateTrackViewModel();
+    vm.FunctionContainer = new(first.Object);
+    Assert.That(vm.CurrentTrackLoved, Is.True);
+    vm.CountedSeconds = 90;
+    vm.CurrentTrackScrobbled = true;
+    vm.CurrentAlbumArtwork = new Uri("https://example.test/art.png");
+    vm.FunctionContainer = new(second.Object);
+    Assert.That(vm.CurrentArtistPlayCount, Is.EqualTo(10));
+    Assert.That(vm.CurrentTrackPlayCount, Is.EqualTo(20));
+    Assert.That(vm.CurrentTrackLoved, Is.False);
+    Assert.That(vm.CurrentTrackTags.Select(t => t.Name), Is.EqualTo(new[] { "new" }));
+    vm.FunctionContainer = null;
+    Assert.That(vm.CurrentArtistPlayCount, Is.EqualTo(-1));
+    Assert.That(vm.CurrentTrackPlayCount, Is.EqualTo(-1));
+    Assert.That(vm.CurrentTrackTags, Is.Empty);
+    Assert.That(vm.CountedSeconds, Is.EqualTo(90));
+    Assert.That(vm.CurrentTrackScrobbled, Is.True);
+    Assert.That(vm.CurrentAlbumArtwork, Is.EqualTo(new Uri("https://example.test/art.png")));
+  }
+
   [TestCase(false)]
   [TestCase(true)]
   public async Task PlayCounts_DiscardPendingResultWhenTrackOrAccountChanges(bool switchAccount)

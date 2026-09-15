@@ -116,15 +116,15 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
 
   [ObservableProperty]
   [NotifyPropertyChangedFor(nameof(TrackPlayCountVisibility))]
-  protected int _currentTrackPlayCount;
+  protected int _currentTrackPlayCount = -1;
 
   [ObservableProperty]
   [NotifyPropertyChangedFor(nameof(ArtistPlayCountVisibility))]
-  protected int _currentArtistPlayCount;
+  protected int _currentArtistPlayCount = -1;
 
   [ObservableProperty]
   [NotifyPropertyChangedFor(nameof(AlbumPlayCountVisibility))]
-  protected int _currentAlbumPlayCount;
+  protected int _currentAlbumPlayCount = -1;
 
   [ObservableProperty]
   [NotifyPropertyChangedFor(nameof(LoveButtonText))]
@@ -204,34 +204,49 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
   }
 
   private long _refreshVersion;
+  private long _accountVersion;
   private long _loveVersion;
 
-  private sealed record TrackRequest(long Version, AccountFunctionContainer? Functions,
+  private sealed record TrackRequest(long Version, long AccountVersion, AccountFunctionContainer? Functions,
     string Artist, string Track, string Album);
 
-  private TrackRequest CaptureTrack() => new(_refreshVersion, FunctionContainer,
+  private TrackRequest CaptureTrack() => new(_refreshVersion, _accountVersion, FunctionContainer,
     CurrentArtistName, CurrentTrackName, CurrentAlbumName);
 
-  private bool IsCurrent(TrackRequest request) => request.Version == _refreshVersion
-    && ReferenceEquals(request.Functions, FunctionContainer)
+  private bool IsCurrent(TrackRequest request) => IsCurrentTrack(request)
+    && request.AccountVersion == _accountVersion
+    && ReferenceEquals(request.Functions, FunctionContainer);
+
+  private bool IsCurrentTrack(TrackRequest request) => request.Version == _refreshVersion
     && request.Artist == CurrentArtistName && request.Track == CurrentTrackName
     && request.Album == CurrentAlbumName;
 
-  protected void ClearState()
+  partial void OnFunctionContainerChanged(AccountFunctionContainer? value)
+  {
+    _accountVersion++;
+    ResetAccountMetadata();
+    _ = UpdatePlayCounts();
+    _ = UpdateTags();
+    _ = UpdateLovedInfo();
+  }
+
+  private void ResetAccountMetadata()
   {
     CurrentTrackPlayCount = -1;
     CurrentArtistPlayCount = -1;
     CurrentAlbumPlayCount = -1;
     CurrentTrackLoved = false;
+    foreach (var vm in CurrentTrackTags)
+      vm.OpenLinkRequested -= Tag_OpenLinkRequested;
+    CurrentTrackTags.Clear();
+  }
+
+  protected void ClearState()
+  {
+    ResetAccountMetadata();
     CurrentAlbumArtwork = null;
     CountedSeconds = 0;
     CurrentTrackScrobbled = false;
-    // clear old tags
-    foreach (var vm in CurrentTrackTags)
-    {
-      vm.OpenLinkRequested -= Tag_OpenLinkRequested;
-    }
-    CurrentTrackTags.Clear();
     UpdateCurrentTrackInfo();
   }
 
@@ -534,7 +549,7 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
     if (!string.IsNullOrEmpty(request.Album))
     {
       var albumResponse = await _lastfmClient.Album.GetInfoByNameAsync(request.Album, request.Artist);
-      if (!IsCurrent(request)) return;
+      if (!IsCurrentTrack(request)) return;
       if (albumResponse.IsSuccess && albumResponse.Data != null)
       {
         var albumArtwork = GetBestImage(albumResponse.Data.Images);
@@ -550,7 +565,7 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
     }
 
     var trackResponse = await _lastfmClient.Track.GetInfoByNameAsync(request.Track, request.Artist);
-    if (!IsCurrent(request)) return;
+    if (!IsCurrentTrack(request)) return;
     if (trackResponse.IsSuccess && trackResponse.Data != null)
     {
       CurrentAlbumArtwork = GetBestImage(trackResponse.Data.Images);

@@ -242,7 +242,7 @@ public partial class MediaPlayerScrobblePluginViewModelBaseTests
     {
       Assert.That(vm.CurrentArtistPlayCount, Is.EqualTo(2));
       Assert.That(vm.CurrentTrackPlayCount, Is.EqualTo(3));
-      Assert.That(vm.CurrentAlbumPlayCount, Is.Zero);
+      Assert.That(vm.CurrentAlbumPlayCount, Is.EqualTo(-1));
     }
     playCountsMock.Verify(p => p.GetAlbumPlayCount(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
   }
