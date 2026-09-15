@@ -158,10 +158,9 @@ public partial class MediaPlayerScrobblePluginViewModelBaseTests
     public override string CurrentAlbumName => AlbumName;
     public override int CurrentTrackLength => 0;
 
-    protected override Task Connect()
-    {
-      return Task.CompletedTask;
-    }
+    public Func<Task> ConnectOperation { get; set; } = () => Task.CompletedTask;
+
+    protected override Task Connect() => ConnectOperation();
 
     protected override Task Disconnect()
     {

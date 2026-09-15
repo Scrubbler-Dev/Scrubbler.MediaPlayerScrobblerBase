@@ -164,7 +164,7 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
     if (AutoConnect)
     {
       _logger.Info("Auto-connect is enabled. Attempting to connect...");
-      _ = Connect();
+      _ = RunSafely(Connect, "auto-connecting");
     }
   }
 
@@ -415,7 +415,7 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
   }
 
 
-  protected async Task UpdateDiscordRichPresence()
+  protected Task UpdateDiscordRichPresence() => RunSafely(() =>
   {
     if (EnableDiscordRichPresence)
     {
@@ -437,7 +437,8 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
         _discordRichPresence.Publish(p);
       }
     }
-  }
+    return Task.CompletedTask;
+  }, "updating Discord rich presence");
 
   [RelayCommand]
   private async Task ToggleLovedState()
@@ -536,51 +537,75 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
     }
   }
 
-  private async Task FetchAlbumArtwork()
+  private Task FetchAlbumArtwork()
   {
     var request = CaptureTrack();
-    if (string.IsNullOrEmpty(request.Artist) || string.IsNullOrEmpty(request.Track))
+    return RunSafely(async () =>
     {
-      _logger.Debug("Cannot fetch album artwork: Track name or artist name is empty.");
-      CurrentAlbumArtwork = null;
-      return;
-    }
-
-    if (!string.IsNullOrEmpty(request.Album))
-    {
-      var albumResponse = await _lastfmClient.Album.GetInfoByNameAsync(request.Album, request.Artist);
-      if (!IsCurrentTrack(request)) return;
-      if (albumResponse.IsSuccess && albumResponse.Data != null)
+      if (string.IsNullOrEmpty(request.Artist) || string.IsNullOrEmpty(request.Track))
       {
-        var albumArtwork = GetBestImage(albumResponse.Data.Images);
-        if (albumArtwork != null)
-        {
-          CurrentAlbumArtwork = albumArtwork;
-          _logger.Debug("Fetched album artwork successfully.");
-          return;
-        }
+        _logger.Debug("Cannot fetch album artwork: Track name or artist name is empty.");
+        CurrentAlbumArtwork = null;
+        return;
       }
 
-      _logger.Debug($"Failed to fetch album artwork: {albumResponse.ErrorMessage}");
-    }
+      if (!string.IsNullOrEmpty(request.Album))
+      {
+        var albumResponse = await _lastfmClient.Album.GetInfoByNameAsync(request.Album, request.Artist);
+        if (!IsCurrentTrack(request)) return;
+        if (albumResponse.IsSuccess && albumResponse.Data != null)
+        {
+          var albumArtwork = GetBestImage(albumResponse.Data.Images);
+          if (albumArtwork != null)
+          {
+            CurrentAlbumArtwork = albumArtwork;
+            _logger.Debug("Fetched album artwork successfully.");
+            return;
+          }
+        }
 
-    var trackResponse = await _lastfmClient.Track.GetInfoByNameAsync(request.Track, request.Artist);
-    if (!IsCurrentTrack(request)) return;
-    if (trackResponse.IsSuccess && trackResponse.Data != null)
-    {
-      CurrentAlbumArtwork = GetBestImage(trackResponse.Data.Images);
-      if (CurrentAlbumArtwork != null)
-        _logger.Debug("Fetched track artwork successfully.");
+        _logger.Debug($"Failed to fetch album artwork: {albumResponse.ErrorMessage}");
+      }
+
+      var trackResponse = await _lastfmClient.Track.GetInfoByNameAsync(request.Track, request.Artist);
+      if (!IsCurrentTrack(request)) return;
+      if (trackResponse.IsSuccess && trackResponse.Data != null)
+      {
+        CurrentAlbumArtwork = GetBestImage(trackResponse.Data.Images);
+        if (CurrentAlbumArtwork != null)
+          _logger.Debug("Fetched track artwork successfully.");
+        else
+          _logger.Debug("Track info did not contain artwork.");
+      }
       else
-        _logger.Debug("Track info did not contain artwork.");
-    }
-    else
+      {
+        CurrentAlbumArtwork = null;
+        _logger.Debug($"Failed to fetch track artwork: {trackResponse.ErrorMessage}");
+      }
+    }, "fetching album artwork", () =>
     {
-      CurrentAlbumArtwork = null;
-      _logger.Debug($"Failed to fetch track artwork: {trackResponse.ErrorMessage}");
-    }
+      if (IsCurrentTrack(request))
+        CurrentAlbumArtwork = null;
+    });
   }
 
+  private async Task RunSafely(Func<Task> operation, string description, Action? onFailure = null)
+  {
+    try
+    {
+      await operation();
+    }
+    catch (OperationCanceledException)
+    {
+      onFailure?.Invoke();
+      _logger.Debug($"Canceled {description}.");
+    }
+    catch (Exception ex)
+    {
+      onFailure?.Invoke();
+      _logger.Error($"Error {description}.", ex);
+    }
+  }
 
   private static Uri? GetBestImage(IReadOnlyDictionary<ImageSize, Uri>? images)
   {
@@ -608,6 +633,10 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
     _logger.Debug($"EnableDiscordRichPresence changed to {value}.");
 
     if (!value)
-      _discordRichPresence.Clear();
+      _ = RunSafely(() =>
+      {
+        _discordRichPresence.Clear();
+        return Task.CompletedTask;
+      }, "updating Discord rich presence");
   }
 }
