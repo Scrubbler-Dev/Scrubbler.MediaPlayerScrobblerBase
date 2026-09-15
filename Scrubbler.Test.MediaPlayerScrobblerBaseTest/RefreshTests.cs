@@ -14,6 +14,47 @@ public partial class MediaPlayerScrobblePluginViewModelBaseTests
     new DiscordRichPresenceData("large", "large text", "small", "small text"), Mock.Of<ILogService>())
     { ArtistName = "Artist", TrackName = "Track" };
 
+  [Test]
+  public void DisplayState_TracksRepeatedConnectionCapabilityAndTrackChanges()
+  {
+    var vm = CreateTrackViewModel();
+    var notifications = new List<string?>();
+    vm.PropertyChanged += (_, args) => notifications.Add(args.PropertyName);
+    var account = new Mock<IAccountPlugin>();
+    account.As<ICanFetchPlayCounts>();
+    account.As<ICanFetchTags>();
+    account.As<ICanLoveTracks>();
+    vm.FunctionContainer = new(account.Object);
+    vm.CurrentTrackPlayCount = -1;
+    Assert.That(vm.TrackPlayCountVisibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Collapsed));
+    vm.CurrentTrackPlayCount = 7;
+    Assert.That(vm.TrackPlayCountVisibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Visible));
+    vm.CurrentTrackLoved = true;
+    Assert.That(vm.LoveButtonText, Is.EqualTo("Unlove"));
+    vm.CurrentTrackLoved = false;
+    Assert.That(vm.LoveButtonText, Is.EqualTo("Love"));
+    vm.IsConnected = true;
+    Assert.That(vm.NotConnectedVisibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Collapsed));
+    vm.IsConnected = false;
+    Assert.That(vm.NotConnectedVisibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Visible));
+    vm.CountedSeconds = 5;
+    vm.CurrentTrackScrobbled = true;
+    Assert.That(vm.ScrobbleProgressSeconds, Is.EqualTo(vm.CurrentTrackLengthToScrobble));
+    vm.CurrentTrackScrobbled = false;
+    Assert.That(vm.ScrobbleProgressSeconds, Is.EqualTo(5));
+    vm.FunctionContainer = null;
+    Assert.That(vm.TrackPlayCountVisibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Collapsed));
+    Assert.That(vm.LoveButtonVisibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Collapsed));
+    Assert.That(vm.TagsVisibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Collapsed));
+    vm.FunctionContainer = new(account.Object);
+    Assert.That(vm.LoveButtonVisibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Visible));
+    Assert.That(vm.TagsVisibility, Is.EqualTo(Microsoft.UI.Xaml.Visibility.Visible));
+    Assert.That(notifications, Does.Contain(nameof(vm.TrackPlayCountVisibility)));
+    Assert.That(notifications, Does.Contain(nameof(vm.LoveButtonText)));
+    Assert.That(notifications, Does.Contain(nameof(vm.NotConnectedVisibility)));
+    Assert.That(notifications, Does.Contain(nameof(vm.ScrobbleProgressSeconds)));
+  }
+
   [TestCase(false)]
   [TestCase(true)]
   public async Task PlayCounts_DiscardPendingResultWhenTrackOrAccountChanges(bool switchAccount)

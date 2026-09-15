@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -20,6 +21,9 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
   public event EventHandler<IEnumerable<ScrobbleData>>? ScrobblesDetected;
 
   [ObservableProperty]
+  [NotifyPropertyChangedFor(nameof(ConnectionStatusText))]
+  [NotifyPropertyChangedFor(nameof(ConnectionButtonText))]
+  [NotifyPropertyChangedFor(nameof(NotConnectedVisibility))]
   protected bool _isConnected;
 
   [ObservableProperty]
@@ -35,6 +39,11 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
   [NotifyPropertyChangedFor(nameof(CanFetchPlayCounts))]
   [NotifyPropertyChangedFor(nameof(CanFetchTags))]
   [NotifyPropertyChangedFor(nameof(CanOpenLinks))]
+  [NotifyPropertyChangedFor(nameof(TrackPlayCountVisibility))]
+  [NotifyPropertyChangedFor(nameof(ArtistPlayCountVisibility))]
+  [NotifyPropertyChangedFor(nameof(AlbumPlayCountVisibility))]
+  [NotifyPropertyChangedFor(nameof(TagsVisibility))]
+  [NotifyPropertyChangedFor(nameof(LoveButtonVisibility))]
   private AccountFunctionContainer? _functionContainer;
 
   public bool CanLoveTracks => FunctionContainer?.LoveTrackObject != null;
@@ -44,6 +53,17 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
   public bool CanFetchTags => FunctionContainer?.FetchTagsObject != null;
 
   public bool CanOpenLinks => FunctionContainer?.OpenLinksObject != null;
+
+  public string ConnectionStatusText => IsConnected ? "Connected" : "Not connected";
+  public string ConnectionButtonText => IsConnected ? "Disconnect" : "Connect";
+  public string LoveButtonText => CurrentTrackLoved ? "Unlove" : "Love";
+  public Visibility NotConnectedVisibility => IsConnected ? Visibility.Collapsed : Visibility.Visible;
+  public Visibility TrackPlayCountVisibility => CanFetchPlayCounts && CurrentTrackPlayCount >= 0 ? Visibility.Visible : Visibility.Collapsed;
+  public Visibility ArtistPlayCountVisibility => CanFetchPlayCounts && CurrentArtistPlayCount >= 0 ? Visibility.Visible : Visibility.Collapsed;
+  public Visibility AlbumPlayCountVisibility => CanFetchPlayCounts && CurrentAlbumPlayCount >= 0 ? Visibility.Visible : Visibility.Collapsed;
+  public Visibility TagsVisibility => CanFetchTags ? Visibility.Visible : Visibility.Collapsed;
+  public Visibility LoveButtonVisibility => CanLoveTracks ? Visibility.Visible : Visibility.Collapsed;
+  public int ScrobbleProgressSeconds => CurrentTrackScrobbled ? CurrentTrackLengthToScrobble : CountedSeconds;
 
   protected readonly ILastfmClient _lastfmClient = lastfmClient;
 
@@ -86,6 +106,7 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
   }
 
   [ObservableProperty]
+  [NotifyPropertyChangedFor(nameof(ScrobbleProgressSeconds))]
   protected bool _currentTrackScrobbled;
 
   public ObservableCollection<TagViewModel> CurrentTrackTags { get; } = [];
@@ -94,23 +115,30 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
   protected Uri? _currentAlbumArtwork;
 
   [ObservableProperty]
+  [NotifyPropertyChangedFor(nameof(TrackPlayCountVisibility))]
   protected int _currentTrackPlayCount;
 
   [ObservableProperty]
+  [NotifyPropertyChangedFor(nameof(ArtistPlayCountVisibility))]
   protected int _currentArtistPlayCount;
 
   [ObservableProperty]
+  [NotifyPropertyChangedFor(nameof(AlbumPlayCountVisibility))]
   protected int _currentAlbumPlayCount;
 
   [ObservableProperty]
+  [NotifyPropertyChangedFor(nameof(LoveButtonText))]
   private bool _currentTrackLoved;
 
   #endregion Track Properties
 
   [ObservableProperty]
+  [NotifyPropertyChangedFor(nameof(ScrobbleProgressSeconds))]
   protected int _countedSeconds;
 
   [ObservableProperty]
+  [NotifyPropertyChangedFor(nameof(ScrobbleProgressSeconds))]
+  [NotifyPropertyChangedFor(nameof(CurrentTrackLengthToScrobble))]
   private double _percentageToScrobble = 0.5d;
 
   /// <summary>
@@ -166,6 +194,7 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
     OnPropertyChanged(nameof(CurrentAlbumName));
     OnPropertyChanged(nameof(CurrentTrackLength));
     OnPropertyChanged(nameof(CurrentTrackLengthToScrobble));
+    OnPropertyChanged(nameof(ScrobbleProgressSeconds));
     _ = UpdateNowPlaying();
     _ = UpdatePlayCounts();
     _ = UpdateTags();
