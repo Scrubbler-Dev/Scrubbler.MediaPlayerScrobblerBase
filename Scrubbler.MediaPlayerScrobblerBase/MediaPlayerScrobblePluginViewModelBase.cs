@@ -258,7 +258,6 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
 
     try
     {
-      _logger.Debug("Updating Now Playing...");
       var albumName = string.IsNullOrWhiteSpace(CurrentAlbumName) ? null : CurrentAlbumName;
       var errorMessage = await nowPlaying.UpdateNowPlaying(CurrentArtistName, CurrentTrackName, albumName);
       if (!string.IsNullOrEmpty(errorMessage))
@@ -266,7 +265,6 @@ public abstract partial class MediaPlayerScrobblePluginViewModelBase(ILastfmClie
         _logger.Error($"Error updating Now Playing: {errorMessage}");
         return;
       }
-      _logger.Debug("Now Playing updated successfully.");
     }
     catch (Exception ex)
     {
